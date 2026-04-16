@@ -23,23 +23,8 @@ async function startBot() {
             await sock.sendMessage(sender, { text: "👑 Admin: Miri Ibrehimov" });
         }
 
-        if (text === "/link") {
-            await sock.sendMessage(sender, { text: "🔗 Temu linki: https://your-link.com" });
-        }
-
-        if (text === "/qaydalar") {
-            await sock.sendMessage(sender, {
-                text: `📌 Qaydalar:
-1. Spam qadağandır
-2. Söyüş qadağandır
-3. Link spam qadağandır`
-            });
-        }
-
         if (text === "/info") {
-            await sock.sendMessage(sender, {
-                text: "🤖 Temu Azerbaijan Bot aktivdir"
-            });
+            await sock.sendMessage(sender, { text: "🤖 Bot aktivdir" });
         }
     });
 }
