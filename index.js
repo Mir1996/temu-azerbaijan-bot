@@ -1,66 +1,47 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
+const { default: makeWASocket, useMultiFileAuthState } = require("@whiskeysockets/baileys");
 
-const client = new Client({
-    authStrategy: new LocalAuth()
-});
+async function startBot() {
+    const { state, saveCreds } = await useMultiFileAuthState("auth");
 
-let warns = {};
+    const sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: true
+    });
 
-const OWNER = "994XXXXXXXXX@c.us";
+    sock.ev.on("creds.update", saveCreds);
 
-const badWords = ["söyüş", "fuck", "idiot"];
-const groupLinkRegex = /chat\.whatsapp\.com/i;
+    sock.ev.on("messages.upsert", async ({ messages }) => {
+        const msg = messages[0];
+        if (!msg.message) return;
 
-client.on('qr', qr => {
-    qrcode.generate(qr, { small: true });
-});
+        const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
+        const sender = msg.key.remoteJid;
 
-client.on('ready', () => {
-    console.log("Bot hazırdır!");
-});
+        if (!text) return;
 
-function warn(user, chat) {
-    if (!warns[user]) warns[user] = 0;
-    warns[user]++;
+        if (text === "/admin") {
+            await sock.sendMessage(sender, { text: "👑 Admin: Miri Ibrehimov" });
+        }
 
-    if (warns[user] === 1) chat.sendMessage("⚠️ Xəbərdarlıq 1");
-    if (warns[user] === 2) chat.sendMessage("⚠️ Xəbərdarlıq 2");
-    if (warns[user] === 3) chat.sendMessage("⛔ Son xəbərdarlıq");
-    if (warns[user] >= 4) {
-        chat.sendMessage("🚫 Qrupdan çıxarıldın");
-        chat.removeParticipants([user]);
-    }
+        if (text === "/link") {
+            await sock.sendMessage(sender, { text: "🔗 Temu linki: https://your-link.com" });
+        }
+
+        if (text === "/qaydalar") {
+            await sock.sendMessage(sender, {
+                text: `📌 Qaydalar:
+1. Spam qadağandır
+2. Söyüş qadağandır
+3. Link spam qadağandır`
+            });
+        }
+
+        if (text === "/info") {
+            await sock.sendMessage(sender, {
+                text: "🤖 Temu Azerbaijan Bot aktivdir"
+            });
+        }
+    });
 }
 
-client.on('message', async msg => {
-    const chat = await msg.getChat();
-    const sender = msg.author || msg.from;
-    let text = msg.body.toLowerCase();
-
-    if (text === "/admin") {
-        chat.sendMessage("👑 Admin: Miri Ibrehimov");
-    }
-
-    if (text === "/link") {
-        chat.sendMessage("🔗 Temu linki hələ əlavə edilməyib");
-    }
-
-    if (text === "/qaydalar") {
-        chat.sendMessage("📌 Qaydalar: spam, söyüş, link qadağandır");
-    }
-
-    if (text === "/info") {
-        chat.sendMessage("🤖 Temu Bot aktivdir");
-    }
-
-    if (badWords.some(w => text.includes(w))) {
-        warn(sender, chat);
-    }
-
-    if (groupLinkRegex.test(text)) {
-        warn(sender, chat);
-    }
-});
-
-client.initialize();
+startBot();
