@@ -1,14 +1,31 @@
 const { default: makeWASocket, useMultiFileAuthState } = require("@whiskeysockets/baileys");
 
 async function startBot() {
-    const { state, saveCreds } = await useMultiFileAuthState("auth");
+    const { state, saveCreds } = await useMultiFileAuthState("./auth");
 
     const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true
+        printQRInTerminal: false
     });
 
     sock.ev.on("creds.update", saveCreds);
+
+    sock.ev.on("connection.update", (update) => {
+        const { connection, qr } = update;
+
+        if (qr) {
+            console.log("QR CODE:", qr);
+        }
+
+        if (connection === "open") {
+            console.log("BOT CONNECTED");
+        }
+
+        if (connection === "close") {
+            console.log("BOT CLOSED - RESTARTING");
+            startBot();
+        }
+    });
 
     sock.ev.on("messages.upsert", async ({ messages }) => {
         const msg = messages[0];
