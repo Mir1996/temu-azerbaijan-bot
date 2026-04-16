@@ -1,4 +1,9 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys");
+const {
+    default: makeWASocket,
+    useMultiFileAuthState,
+    DisconnectReason
+} = require("@whiskeysockets/baileys");
+
 const P = require("pino");
 
 async function startBot() {
@@ -7,7 +12,8 @@ async function startBot() {
     const sock = makeWASocket({
         auth: state,
         logger: P({ level: "silent" }),
-        printQRInTerminal: true
+        printQRInTerminal: false,
+        browser: ["Ubuntu", "Chrome", "22.04.4"]
     });
 
     sock.ev.on("creds.update", saveCreds);
@@ -16,20 +22,20 @@ async function startBot() {
         const { connection, lastDisconnect, qr } = update;
 
         if (qr) {
-            console.log("📱 QR CODE hazırdır (terminaldə görünəcək)");
+            console.log("QR READY:", qr);
         }
 
         if (connection === "open") {
-            console.log("✅ BOT BAĞLANDI VƏ İŞLƏYİR");
+            console.log("BOT ONLINE ✅");
         }
 
         if (connection === "close") {
-            const shouldReconnect =
-                lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            const reason = lastDisconnect?.error?.output?.statusCode;
 
-            console.log("❌ Bağlandı, yenidən qoşulur...");
+            console.log("CONNECTION CLOSED:", reason);
 
-            if (shouldReconnect) {
+            if (reason !== DisconnectReason.loggedOut) {
+                console.log("RECONNECTING...");
                 startBot();
             }
         }
@@ -47,35 +53,12 @@ async function startBot() {
 
         if (!text) return;
 
-        const command = text.toLowerCase();
-
-        if (command === "/admin") {
-            await sock.sendMessage(sender, {
-                text: "👑 Admin: Miri Ibrehimov"
-            });
+        if (text === "/admin") {
+            await sock.sendMessage(sender, { text: "👑 Admin: Miri Ibrehimov" });
         }
 
-        if (command === "/link") {
-            await sock.sendMessage(sender, {
-                text: "🔗 Temu linki hələ əlavə edilməyib"
-            });
-        }
-
-        if (command === "/qaydalar") {
-            await sock.sendMessage(sender, {
-                text:
-`📌 Qaydalar:
-1. Söyüş qadağandır
-2. Spam qadağandır
-3. Link spam qadağandır
-4. Qarşılıqlı dəstək məcburidir`
-            });
-        }
-
-        if (command === "/info") {
-            await sock.sendMessage(sender, {
-                text: "🤖 Temu Azerbaijan Bot aktivdir"
-            });
+        if (text === "/info") {
+            await sock.sendMessage(sender, { text: "🤖 Bot işləyir" });
         }
     });
 }
